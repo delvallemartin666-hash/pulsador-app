@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel Docente - Administrador</title>
+  <style>
+    * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
+    body { background-color: #0b1120; color: #f8fafc; padding: 20px; margin: 0; display: flex; justify-content: center; }
+    .container { width: 100%; max-width: 550px; }
+    h1 { color: #facc15; text-align: center; margin-bottom: 20px; font-size: 1.6rem; }
+    .btn-reset { width: 100%; padding: 16px; font-size: 1.1rem; font-weight: bold; background: #dc2626; color: #fff; border: none; border-radius: 12px; cursor: pointer; margin-bottom: 20px; box-shadow: 0 4px 14px rgba(220,38,38,0.4); }
+    .btn-reset:hover { background: #b91c1c; }
+    .winner-card { background: #064e3b; border: 2px solid #10b981; border-radius: 12px; padding: 16px; margin-bottom: 20px; text-align: center; font-size: 1.25rem; }
+    .list-card { background: #1e293b; border-radius: 12px; padding: 20px; }
+    ol { padding-left: 20px; margin: 0; }
+    li { padding: 10px 0; border-bottom: 1px solid #334155; font-size: 1.05rem; display: flex; justify-content: space-between; align-items: center; }
+    li:last-child { border-bottom: none; }
+    .tag { font-size: 0.8rem; padding: 4px 8px; border-radius: 6px; font-weight: bold; }
+    .tag-COSTUMBRES { background: #1e3a8a; color: #93c5fd; }
+    .tag-PIEDAD { background: #581c87; color: #d8b4fe; }
+    .empty-msg { text-align: center; color: #64748b; font-style: italic; }
+  </style>
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h1>👑 Panel Docente</h1>
+    <button class="btn-reset" onclick="reiniciar()">🔄 Reiniciar Ronda (Limpiar)</button>
+
+    <div id="caja-ganador" class="winner-card" style="display: none;"></div>
+
+    <div class="list-card">
+      <h3 style="margin-top:0;">Orden de llegada:</h3>
+      <ol id="lista-participantes"></ol>
+      <p id="sin-pulsaciones" class="empty-msg">Nadie ha pulsado aún en esta ronda.</p>
+    </div>
+  </div>
+
+  <script>
+    const socket = io();
+
+    function reiniciar() {
+      socket.emit('admin-reset');
+    }
+
+    socket.on('state-update', (state) => {
+      const cajaGanador = document.getElementById('caja-ganador');
+      const lista = document.getElementById('lista-participantes');
+      const vacio = document.getElementById('sin-pulsaciones');
+
+      if (state.list.length === 0) {
+        cajaGanador.style.display = 'none';
+        lista.innerHTML = '';
+        vacio.style.display = 'block';
+        return;
+      }
+
+      vacio.style.display = 'none';
+      const primero = state.list[0];
+      cajaGanador.style.display = 'block';
+      cajaGanador.innerHTML = `🥇 <strong>1er Lugar:</strong> ${primero.name} <br>
+                               <span class="tag tag-${primero.group}">GRUPO ${primero.group}</span> 
+                               <span style="font-size:0.85rem; color:#a7f3d0; margin-left:6px;">(${primero.time})</span>`;
+
+      lista.innerHTML = state.list.map((p, idx) => `
+        <li>
+          <span><strong>#${idx + 1}</strong> ${p.name}</span>
+          <span>
+            <span class="tag tag-${p.group}">${p.group}</span>
+            <small style="color: #94a3b8; margin-left: 8px;">${p.time}</small>
+          </span>
+        </li>
+      `).join('');
+    });
+  </script>
+</body>
+</html>
+
