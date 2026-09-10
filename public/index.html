@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pulsador - Participante</title>
+  <style>
+    * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
+    body { background-color: #0f172a; color: #f8fafc; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
+    .card { background: #1e293b; border-radius: 16px; padding: 24px; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+    h1 { color: #facc15; margin-top: 0; font-size: 1.6rem; }
+    label { display: block; text-align: left; margin: 10px 0 4px; font-size: 0.9rem; color: #94a3b8; }
+    input, select { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: #fff; font-size: 1rem; margin-bottom: 12px; }
+    button { width: 100%; padding: 14px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1rem; }
+    .btn-blue { background: #2563eb; color: #fff; }
+    .buzzer-btn { width: 170px; height: 170px; border-radius: 50%; background: #dc2626; color: #fff; font-size: 1.8rem; font-weight: 900; margin: 25px auto; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 0 #991b1b; transition: all 0.1s; }
+    .buzzer-btn:active { transform: translateY(6px); box-shadow: 0 4px 0 #991b1b; }
+    .buzzer-btn:disabled { background: #475569; box-shadow: none; transform: none; cursor: not-allowed; }
+    .hidden { display: none; }
+    .badge { display: inline-block; padding: 6px 14px; border-radius: 20px; font-weight: bold; margin-bottom: 10px; background: #334155; color: #38bdf8; }
+    .status-msg { font-size: 1.1rem; min-height: 28px; }
+  </style>
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+  <div id="pantalla-registro" class="card">
+    <h1>⚡ Registro</h1>
+    <label for="grupo">Selecciona tu grupo:</label>
+    <select id="grupo">
+      <option value="COSTUMBRES">COSTUMBRES</option>
+      <option value="PIEDAD">PIEDAD</option>
+    </select>
+    <label for="nombre">Primer nombre y primer apellido:</label>
+    <input type="text" id="nombre" placeholder="Ej: Juan Perez" required>
+    <button class="btn-blue" onclick="ingresar()">Ingresar a la sala</button>
+  </div>
+
+  <div id="pantalla-pulsador" class="card hidden">
+    <div id="grupo-badge" class="badge"></div>
+    <h2 id="saludo-participante" style="margin: 5px 0;"></h2>
+    <p id="mensaje-estado" class="status-msg">¡Listo para responder!</p>
+    <button id="btn-pulsar" class="buzzer-btn" onclick="pulsar()">¡PULSAR!</button>
+  </div>
+
+  <script>
+    const socket = io();
+    let miNombre = "", miGrupo = "", yaOprimi = false;
+
+    function ingresar() {
+      const nom = document.getElementById('nombre').value.trim();
+      if (!nom) return alert("Por favor escribe tu nombre y apellido");
+      miNombre = nom;
+      miGrupo = document.getElementById('grupo').value;
+      document.getElementById('pantalla-registro').classList.add('hidden');
+      document.getElementById('pantalla-pulsador').classList.remove('hidden');
+      document.getElementById('saludo-participante').innerText = miNombre;
+      document.getElementById('grupo-badge').innerText = "GRUPO: " + miGrupo;
+    }
+
+    function pulsar() {
+      if (yaOprimi) return;
+      socket.emit('buzz', { name: miNombre, group: miGrupo });
+      yaOprimi = true;
+      document.getElementById('btn-pulsar').disabled = true;
+      document.getElementById('mensaje-estado').innerText = "¡Has pulsado!";
+    }
+
+    socket.on('state-update', (state) => {
+      if (state.list.length === 0) {
+        yaOprimi = false;
+        document.getElementById('btn-pulsar').disabled = false;
+        document.getElementById('mensaje-estado').innerText = "¡Nueva ronda! Puedes pulsar.";
+      }
+    });
+  </script>
+</body>
+</html>
+
